@@ -1,0 +1,12 @@
+{
+  "name": "glimt",
+  "owner": { "name": "Yornaath" },
+  "description": "Glimt breath work integrations for coding agents.",
+  "plugins": [
+    {
+      "name": "glimt-app-agent-plugin",
+      "source": "./",
+      "description": "Breath work sessions, reminders and other well-being tools from your agent, via the Glimt desktop app."
+    }
+  ]
+}

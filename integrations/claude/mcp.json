@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "glimt": {
+      "type": "http",
+      "url": "http://127.0.0.1:43110/mcp",
+      "headersHelper": "sh \"${CLAUDE_PLUGIN_ROOT}/integrations/claude/scripts/glimt-auth.sh\" || powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/integrations/claude/scripts/glimt-auth.ps1\""
+    }
+  }
+}
