@@ -40,7 +40,9 @@ type VisualizationSize = {
 
 ## `render(sequences, state, canvas, session)`
 
-Called on every animation frame of the worker (usually 60 Hz, throttled when the window is hidden). Rendering only starts once the app has sent both the sequences and the state.
+Called on every animation frame of the worker (usually 60 Hz, throttled when the window is hidden). Rendering only starts once the app has sent both the sequences and the state. In a preview, it is instead called back to back in virtual time (see Lifecycle).
+
+**Take every animation from `state` and `state.time`.** Never use `performance.now()`, `Date.now()`, timers or your own `requestAnimationFrame` for motion: previews run faster than real time, and wall-clock motion would look frozen in the snapshots.
 
 ```ts
 type BreathingSequence = { sequence: BreathingPattern[] }
@@ -119,6 +121,11 @@ Called when the visualization is removed, but best-effort: the whole sandbox is 
   - The Visuals settings preview. It loops the user's main preset (box breathing for playlists) three rounds at a time, and the session is anonymous.
 - **`create` can run several times in one session.** The visualization is recreated after a countdown section and when its source is updated, and it can be recreated when a window shows it again. `state.time` restarts at 0 each time. Don't rely on state surviving between mounts, and there is no storage to persist it.
 - **Updates hot-reload.** When the agent updates the source, every open window reloads the new revision immediately.
+- **Previews** (`preview_custom_visualization`):
+  - `create` runs in a hidden window at the requested size with `dpr` 1.
+  - `render` is called once per 1/30 s of virtual time through one breath cycle, as fast as the module can go, and a few frames are snapshotted. `resize` isn't called.
+  - The session is a single section labelled with the pattern, with no playlist.
+  - A module that animates from `state.time` looks the same in a preview as live, including any smoothing based on `dt`.
 
 ## The sandbox
 

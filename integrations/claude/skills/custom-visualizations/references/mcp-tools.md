@@ -68,6 +68,48 @@ All three fields are required; use `""` for no description. Limits: `name` 1–1
 
 `patch` takes any of `name`, `description` and `source`; fields you leave out keep their value. Every update increments `revision`, clears `last_error`, and makes open Glimt windows reload the visualization right away. Returns the updated `CustomVisualization`.
 
+## `preview_custom_visualization`
+
+Renders a module off screen through one breath cycle and returns what it drew. Nothing is saved, the settings don't change and nothing appears on the user's screen. Read-only.
+
+```json
+{ "source": "export default function create({ canvas, size }) { … }" }
+```
+
+```json
+{
+  "id": 3,
+  "pattern": { "inhale": 4, "hold_in": 7, "exhale": 8, "hold_out": 0 },
+  "width": 220,
+  "height": 220,
+  "background": "light"
+}
+```
+
+| Argument | Default | |
+|---|---|---|
+| `id` or `source` | (one is required) | A saved visualization, or a draft module source (same limits as `create`) |
+| `pattern` | `{ "inhale": 4, "hold_in": 4, "exhale": 4, "hold_out": 4 }` | Seconds per phase; 0 skips a phase; 1–60 s in total |
+| `width`, `height` | `480` | CSS pixels, 64–1024, rendered at a device pixel ratio of 1 |
+| `background` | `"dark"` | `"dark"` or `"light"` (the app's page backgrounds), or `"transparent"` |
+
+It returns MCP content blocks, not JSON:
+1. **A summary:**
+   - what was previewed, the size, background and pattern
+   - frames rendered with the average and slowest `render` time in ms (CPU time)
+   - `No errors.`, or `The module FAILED (Error|Timeout|Unsupported): <message>` followed by the stack
+   - the folder the PNGs were saved to
+2. **For each snapshot:** a label (`Frame 2: end of inhale (fully in)`) followed by the PNG image.
+
+Snapshots are taken at each phase's midpoint, plus the end of the inhale and of the exhale. With all four phases that's 6 frames; phases of 0 s are skipped. When the module fails there are no frames.
+
+How it works:
+- **Virtual time.** The module is created fresh, then `render` is called for every frame of the cycle at 30 virtual frames per second, as fast as it can render. `state.time` advances 1/30 s per frame, so a 16 s cycle previews in about a second.
+- **The same sandbox** and limits as the real visualization: a hang is caught after 4 s, and the whole preview gives up after 30 s.
+- **The session** has one section labelled with the pattern (e.g. `4-7-8`) and no playlist.
+- **Saved files.** The PNGs are also saved to `<system temp>/glimt-visualization-preview/`, replaced on every preview, so the user can open them.
+- **One preview at a time.** The first one takes a few seconds longer while Glimt opens its hidden preview window.
+
 ## `delete_custom_visualization`
 
 ```json

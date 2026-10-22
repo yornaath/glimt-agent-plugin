@@ -1,6 +1,6 @@
 {
   "name": "glimt-app-agent-plugin",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Glimt app offers breath work, breath reminders and other well-being tools for your workday. Integrate it with your agents with the plugin.",
   "author": { "name": "Yornaath" },
   "homepage": "https://www.glimtapp.io",

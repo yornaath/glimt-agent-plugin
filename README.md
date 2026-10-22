@@ -37,7 +37,7 @@ Claude Code runs `headersHelper` through `sh` on macOS/Linux but through `cmd.ex
 
 ### Skills
 
-- **custom-visualizations**: writes a JavaScript breathing visualization (2D canvas or three.js), installs it in Glimt, selects and previews it, and fixes it from the runtime errors Glimt reports. It documents the module API and the visualization MCP tools; the tool descriptions themselves stay short and point here. Keep `references/module-api.md` in sync with `CustomVisualizationApi.ts` in the glimt-app repo.
+- **custom-visualizations**: writes a JavaScript breathing visualization (2D canvas or three.js), checks it with off-screen previews (`preview_custom_visualization` returns snapshots the agent can look at), then installs and selects it in Glimt and fixes it from the runtime errors Glimt reports. It documents the module API and the visualization MCP tools; the tool descriptions themselves stay short and point here. Keep `references/module-api.md` in sync with `CustomVisualizationApi.ts` in the glimt-app repo.
 
 ### Troubleshooting
 
