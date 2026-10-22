@@ -1,6 +1,6 @@
 # Glimt agent plugin
 
-Connects coding agents to the [Glimt](https://www.glimtapp.io) desktop app, so they can start breath work sessions, show reminders and manage presets and playlists through Glimt's local MCP server.
+Connects coding agents to the [Glimt](https://www.glimtapp.io) desktop app, so they can start breath work sessions, show reminders, manage presets and playlists, and design your own breathing visualizations through Glimt's local MCP server.
 
 ## Quick install (Claude Code)
 
@@ -12,7 +12,7 @@ Connects coding agents to the [Glimt](https://www.glimtapp.io) desktop app, so t
    /plugin install glimt-app-agent-plugin@glimt
    ```
 
-3. Run `/mcp` and check that `glimt` is connected. Then try asking Claude: *"start a short breathing session"*.
+3. Run `/mcp` and check that `glimt` is connected. Then try asking Claude: *"start a short breathing session"*, or *"make me a calm ocean-wave breathing visualization"*.
 
 You don't need to paste a token. The plugin reads it from Glimt automatically.
 
@@ -21,7 +21,8 @@ You don't need to paste a token. The plugin reads it from Glimt automatically.
 ```
 .claude-plugin/        Claude Code manifest and marketplace (must live here)
 integrations/
-  claude/              Everything Claude specific: MCP config, scripts, later hooks and skills
+  claude/              Everything Claude specific: MCP config, scripts, skills, later hooks
+    skills/            Agent skills, registered through `skills` in plugin.json
 ```
 
 Each agent gets its own folder under `integrations/`.
@@ -33,6 +34,10 @@ For installation, see [Quick install](#quick-install-claude-code). To work on th
 The plugin registers the `glimt` MCP server. Its `headersHelper` reads the token from Glimt's discovery file each time it connects, so there's nothing to paste and token rotation needs no reconfiguration.
 
 Claude Code runs `headersHelper` through `sh` on macOS/Linux but through `cmd.exe` on Windows, where `sh` usually isn't on PATH. The command tries `glimt-auth.sh` first and falls back to `glimt-auth.ps1` with `||`, which both shells understand. Keep the two scripts in sync.
+
+### Skills
+
+- **custom-visualizations**: writes a JavaScript breathing visualization (2D canvas or three.js), installs it in Glimt, selects and previews it, and fixes it from the runtime errors Glimt reports. It documents the module API and the visualization MCP tools; the tool descriptions themselves stay short and point here. Keep `references/module-api.md` in sync with `CustomVisualizationApi.ts` in the glimt-app repo.
 
 ### Troubleshooting
 

@@ -6,7 +6,7 @@
     {
       "name": "glimt-app-agent-plugin",
       "source": "./",
-      "description": "Breath work sessions, reminders and other well-being tools from your agent, via the Glimt desktop app."
+      "description": "Breath work sessions, reminders, custom breathing visualizations and other well-being tools from your agent, via the Glimt desktop app."
     }
   ]
 }
