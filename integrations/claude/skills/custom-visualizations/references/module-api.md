@@ -153,3 +153,24 @@ The module is stopped at the first failure, the user sees the built-in 3D orb, a
 | `unsupported` | The system webview lacks OffscreenCanvas, module workers, or the sandbox didn't load within 8 s |
 
 Messages are capped at 4000 characters and stacks at 16000. A new revision clears the error and gets a fresh start.
+
+### Failures that are *not* caught
+
+Some failures throw nothing, so nothing above sees them: the user gets a blank area, `last_error` stays `null`, and a preview says `No errors.` with blank frames. Make them throw:
+
+- **Shader compile/link errors.** three.js only logs these. Verified in the sandbox: with this hook, the preview reports the GLSL error and line.
+  ```js
+  renderer.debug.onShaderError = (gl, program, vs, fs) => {
+    throw new Error("Shader failed: " + (gl.getShaderInfoLog(fs) || gl.getShaderInfoLog(vs) || gl.getProgramInfoLog(program) || "").trim())
+  }
+  ```
+- **Lost WebGL context.** The GPU reset, or there were too many contexts. three.js stops drawing and waits for a restore. Throw if it doesn't come back:
+  ```js
+  let lostAt = null
+  canvas.addEventListener("webglcontextlost", () => { lostAt = lastTime })
+  canvas.addEventListener("webglcontextrestored", () => { lostAt = null })
+  // in render(), after updating lastTime:
+  if (lostAt !== null) { if (state.time - lostAt > 3) throw new Error("WebGL context lost"); return }
+  ```
+  In `dispose`, call `renderer.forceContextLoss()` after `renderer.dispose()` so remounts don't pile up contexts.
+- **`NaN` in animation state.** It draws nothing, forever. Clamp `dt` to `[0, 0.1]` and keep eased values finite.

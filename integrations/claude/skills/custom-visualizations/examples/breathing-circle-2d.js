@@ -26,7 +26,7 @@ export default function create({ canvas }) {
 
       // Glide towards the target instead of jumping, so phase changes never snap.
       // Frame-rate independent; 12 ≈ settles in a quarter of a second.
-      const dt = Math.min(state.time - lastTime, 0.1)
+      const dt = Math.min(Math.max(state.time - lastTime, 0), 0.1) // never negative: that would blow the glide up to NaN
       lastTime = state.time
       level += (breathLevel(phase, state.progress) - level) * (1 - Math.exp(-12 * dt))
 

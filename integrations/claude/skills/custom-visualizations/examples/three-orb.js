@@ -56,6 +56,10 @@ export default function create({ canvas, size, THREE }) {
   renderer.setClearColor(0x000000, 0) // transparent background
   renderer.setPixelRatio(size.dpr)
   renderer.setSize(size.width, size.height, false) // false: an OffscreenCanvas has no CSS size to set
+  // three.js only logs shader errors; throw so they reach last_error instead of leaving a blank area.
+  renderer.debug.onShaderError = (gl, program, vs, fs) => {
+    throw new Error("Shader failed: " + (gl.getShaderInfoLog(fs) || gl.getShaderInfoLog(vs) || gl.getProgramInfoLog(program) || "").trim())
+  }
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(35, size.width / size.height, 0.1, 20)
@@ -81,7 +85,7 @@ export default function create({ canvas, size, THREE }) {
       const phase = sequences[state.sequenceIndex]?.sequence[state.seq]?.phases[state.phase]
       if (!phase) return
 
-      const dt = Math.min(state.time - lastTime, 0.1)
+      const dt = Math.min(Math.max(state.time - lastTime, 0), 0.1) // never negative: that would blow the glide up to NaN
       lastTime = state.time
       const moving = phase.type === "inhale" || phase.type === "exhale"
       level = approach(level, breathLevel(phase, state.progress), dt, 12)
