@@ -107,7 +107,7 @@ The current section is `session.sections[state.sequenceIndex]`. Labels are `null
 
 ## `resize(size)`
 
-Called after the visualization's box changes size, e.g. when the window goes full screen. The canvas backing store has already been resized when it runs. It isn't called on start; use `ctx.size` there. Update projection matrices, cached gradients and font sizes here.
+Called after the visualization's box changes size or its `dpr` changes: when the window goes full screen, the screen resolution or display scaling changes, or the window moves to a monitor with other scaling. The canvas backing store has already been resized when it runs. It isn't called on start; use `ctx.size` there. Update projection matrices, cached gradients and font sizes here.
 
 ## `dispose()`
 

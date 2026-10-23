@@ -21,13 +21,14 @@ Read these before writing a module:
 
 1. **Check the connection.** The `glimt` MCP tools must be available. If they aren't, ask the user to start Glimt and turn on MCP in its settings, then reconnect with `/mcp`.
 2. **Understand the idea** and pick the closest example as a base. Ask what the user wants it to feel like if that isn't clear. Calm and slow is the default.
-3. **Write the module.** Save it to a local file the user can keep, e.g. `glimt-visualizations/<name>.js`. If Node is available, run `node --check <file>` to catch syntax errors.
-4. **Preview the draft.** Call `preview_custom_visualization` `{ "source": "<module source>" }`. Look at every frame and read the summary. Work through the checklist below.
-5. **Fix and preview again** until the checklist passes. This loop is cheap (about a second per preview) and invisible to the user, so use it freely.
-6. **Install it** with `create_custom_visualization` `{ "visualization": { "name", "description", "source" } }` and note the returned `id`.
-7. **Select it.** Call `get_settings`, set `visuals.visualization` to `{ "CustomVisualization": { "id": <id> } }`, and pass the whole settings object back to `update_settings`. It replaces all settings, so never send a partial object.
-8. **Let the user see it.** Offer a real session with `show_main_breath_reminder` `{ "reminder_mode": { "Offer": { "text": "Want to try your new visualization?" } } }`. Use `"Immediate"` only if they asked to see it now. You can also point them to the live preview on Glimt's Visuals settings page.
-9. **Confirm it ran.** After they have seen it, call `get_custom_visualization` `{ "id": <id> }` and check that `last_error` is `null`. The real app can differ from the preview, e.g. a WebKit difference on macOS. Then ask how it feels.
+3. **Learn the user's screen.** Call `get_display_info` for their monitors, display scaling, whether the prompt is full screen, and the exact module and canvas size of every surface. Never ask the user for their resolution or scaling. This is a snapshot for choosing preview sizes and line weights: never put its numbers in the module, because the user can change displays, resolution or scaling at any time.
+4. **Write the module.** Save it to a local file the user can keep, e.g. `glimt-visualizations/<name>.js`. If Node is available, run `node --check <file>` to catch syntax errors.
+5. **Preview the draft.** Call `preview_custom_visualization` `{ "source": "<module source>" }`. Look at every frame and read the summary. Work through the checklist below.
+6. **Fix and preview again** until the checklist passes. This loop is cheap (about a second per preview) and invisible to the user, so use it freely.
+7. **Install it** with `create_custom_visualization` `{ "visualization": { "name", "description", "source" } }` and note the returned `id`.
+8. **Select it.** Call `get_settings`, set `visuals.visualization` to `{ "CustomVisualization": { "id": <id> } }`, and pass the whole settings object back to `update_settings`. It replaces all settings, so never send a partial object.
+9. **Let the user see it.** Offer a real session with `show_main_breath_reminder` `{ "reminder_mode": { "Offer": { "text": "Want to try your new visualization?" } } }`. Use `"Immediate"` only if they asked to see it now. You can also point them to the live preview on Glimt's Visuals settings page.
+10. **Confirm it ran.** After they have seen it, call `get_custom_visualization` `{ "id": <id> }` and check that `last_error` is `null`. The real app can differ from the preview, e.g. a WebKit difference on macOS. Then ask how it feels.
 
 ## Editing a visualization
 
@@ -44,6 +45,7 @@ A preview has six frames for a pattern with all four phases: inhale 50%, end of 
 - **It's composed well.** Nothing is clipped at the edges, even when fully in. The main shape is centred. The lower fifth is calm, because the app draws the phase label and buttons there.
 - **The background is transparent.** Frames come on a dark background by default. Preview with `"background": "light"` too: a dark halo or an opaque rectangle means something isn't clearing to transparent.
 - **It works small.** Preview at `"width": 220, "height": 220` (the micro reminder). It should still read, with no tiny text or hairlines.
+- **It works at the user's size, and at others.** Preview at the `css_width`/`css_height` of the `prompt` surface from `get_display_info` (scaled down proportionally if a side is over 1024), and also at 1024×1024 and a wide 1024×576. It should look like the same design at every size.
 - **It works for the user's pattern.** The default is box breathing (4-4-4-4). Read their main preset with `get_settings`, then `get_breath_preset`, and preview with `"pattern": { "inhale", "hold_in", "exhale", "hold_out" }`. Long holds and missing holds are worth seeing.
 - **It's fast.** The summary reports average and slowest `render` time, measured as CPU time. Aim for well under 4 ms average and under 16 ms slowest. More than that will stutter or drain laptops in long sessions.
 - **There are no errors.** The summary says `No errors.`, or gives the module's error with its stack. With WebGL, `No errors.` plus blank frames usually means a shader didn't compile: three.js only logs that, so install the `onShaderError` hook (`references/module-api.md`, Failure handling) to make it a real error.
@@ -80,6 +82,7 @@ export default function create({ canvas, size, THREE }) { // may be async
 - **No imports, no network.** `import … from "…"`, `fetch`, WebSocket and XHR all fail. three.js is the only library, and it comes in through `export const requires = ["three"]` and `ctx.THREE`. Inline any other helper code you need.
 - **No DOM.** The module runs in a Web Worker: there's no `window`, `document`, CSS, `Image` from URLs or DOM events. Draw on the `OffscreenCanvas` with `getContext("2d")`, `getContext("webgl2")` or `new THREE.WebGLRenderer({ canvas })`.
 - **No input.** The visualization never receives clicks or keys.
+- **Size only from `size` and `canvas`.** Never hard-code a resolution, pixel ratio or aspect ratio. Recompute everything size-dependent in `resize(size)` (projection, gradients, line widths, cached layouts and render targets). It runs whenever the window changes size or the user changes display scaling or moves to another monitor, and `size.dpr` can go up or down.
 - **Keep the background transparent.** Clear to transparent (`clearRect`, or `setClearColor(0x000000, 0)`). The app's own background and blur show through.
 - **Don't draw the app's UI.** Glimt already shows the phase instruction ("Inhale"), the round counter and the Snooze/Skip buttons over the bottom of the area. Section or playlist names are fine.
 - **Stay responsive.** If the module goes quiet for more than 10 s while loading, or 4 s after it starts, it is killed and the user sees the built-in orb.
@@ -90,7 +93,7 @@ export default function create({ canvas, size, THREE }) { // may be async
 - **Follow the breath.** It is a breathing guide first and art second. Inhale grows, rises or brightens; the holds rest, still or barely moving; exhale releases. Use the same mapping for every phase type, because users breathe many patterns.
 - **Ease, and never snap.** Ease within a phase (`0.5 - Math.cos(Math.PI * t) / 2`). Glide across phase boundaries with a frame-rate-independent approach: `v += (target - v) * (1 - Math.exp(-rate * dt))`, where `dt` comes from `state.time`, clamped to `[0, 0.1]`: a negative `dt` makes the factor huge, and the value turns into `NaN` and stays broken for the rest of the mount. All the examples do this.
 - **Calm.** No flashing, strobing or fast flicker: some users are photosensitive, and the point is to relax. Slow ambient motion (drift, shimmer) is fine at well under 1 Hz.
-- **Every size.** The same module runs in a 480 px prompt window, full screen on large monitors, a ~220 px round micro reminder and a small settings preview. Scale everything from `Math.min(canvas.width, canvas.height)`. Skip fine detail and text below about 260 CSS px. Multiply line widths and font sizes by `size.dpr`.
+- **Every size.** The same module runs in a 480 px prompt window, full screen on large monitors, a ~220 px round micro reminder and a small settings preview. Scale everything from `Math.min(canvas.width, canvas.height)`. Skip fine detail and text below about 260 CSS px. Multiply line widths and font sizes by `size.dpr`. If `get_display_info` reports an `upscale` above 1 (scaling over 200 %), the canvas is stretched on screen, so make thin lines and small text a little bolder.
 - **The Glimt look**, unless the user wants something else: a soft, milky body with a thin purple edge and a gentle halo. Palette: `#6055F7` (brand purple), `#4F46CE` (edge), `#4613C7` (deep), with warm accents `#ED6510` and `#E7C630` used sparingly.
 - **Light on the GPU.** It may run for long sessions on laptops. Prefer `powerPreference: "low-power"`, modest geometry and the given `dpr`, which is already capped at 2. Cost per pixel matters most: full screen at `dpr` 2 is 8+ MP. For an expensive fragment shader, render into a `WebGLRenderTarget` capped near 1 MP and draw it scaled up onto the canvas. Don't shrink the canvas itself with `setPixelRatio`; keep `size.dpr`.
 

@@ -146,6 +146,35 @@ The `visualization` variants are:
 
 `visuals.fullscreen` makes the breathing prompt fill the screen, which is good for checking how a visualization scales. Ask the user before changing it.
 
+### `get_display_info`
+
+Read only, no arguments. Returns the user's monitors and the sizes a module gets on each, so you never need to ask for resolution or scaling. It applies the sandbox's own clamps (`dpr` 0.5–2, 4096 px per side).
+
+```json
+{
+  "fullscreen_setting": false,
+  "monitors": [{
+    "name": "\\\\.\\DISPLAY1",
+    "is_prompt_monitor": true,
+    "physical_width": 3840, "physical_height": 2400,
+    "scale_factor": 2.5,
+    "logical_width": 1536, "logical_height": 960,
+    "sandbox_dpr": 2,
+    "upscale": 1.25,
+    "surfaces": [
+      { "surface": "prompt", "css_width": 480, "css_height": 480, "canvas_width": 960, "canvas_height": 960 },
+      { "surface": "prompt_windowed", "css_width": 480, "css_height": 480, "canvas_width": 960, "canvas_height": 960 },
+      { "surface": "prompt_fullscreen", "css_width": 1536, "css_height": 960, "canvas_width": 3072, "canvas_height": 1920 },
+      { "surface": "micro", "css_width": 220, "css_height": 220, "canvas_width": 440, "canvas_height": 440 }
+    ]
+  }]
+}
+```
+
+- `css_width/height` is `size.width/height` in the module, and `canvas_width/height` is `canvas.width/height`. `prompt` is the prompt as the user has it configured now.
+- `upscale` is how much the OS stretches the canvas on screen. 1 is pixel sharp. Above 1 (scaling over 200 %), thin lines and small text look soft, so make them a little bolder.
+- Pass a surface's `css_width`/`css_height` to `preview_custom_visualization` to check it at the user's real size. Previews always render at `dpr` 1.
+
 ### `show_main_breath_reminder`
 
 Opens the breathing prompt with the user's main preset or playlist, which is the best way to preview.
