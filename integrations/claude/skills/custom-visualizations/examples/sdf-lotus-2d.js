@@ -6,8 +6,9 @@
 // Techniques and snippets from references/shader-cookbook.md, credited inline.
 // Cost: 17 small SDFs, one noise call and one OKLab conversion a pixel.
 // Measured in Glimt's test harness, which renders on the CPU (SwiftShader):
-// 7 ms a frame at 480×480 and 34 ms at 1024×1024, including GPU work. A real
-// GPU is many times faster; check the preview's full screen estimate.
+// 7 ms a frame at 480×480 and 34 ms at 1024×1024, including GPU work. In
+// Glimt on a Windows desktop GPU: 0.7 ms at 1024×1024, estimated 3.9 ms at a
+// 3840×2160 full screen.
 
 export const requires = ["three"]
 

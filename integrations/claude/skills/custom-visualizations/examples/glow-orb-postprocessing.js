@@ -2,12 +2,13 @@
 // breathe in and fades as you breathe out. Same geometry, shader and breath
 // mapping as three-orb.js, so the two compare directly. The reference for
 // pmndrs postprocessing: an EffectComposer with one EffectPass for bloom and
-// AgX tone mapping, keeping the background transparent.
+// Neutral tone mapping, keeping the background transparent.
 //
 // Cost: the orb into a half float buffer, a mipmap blur bloom at half
 // resolution and one full-screen effect pass. Measured in Glimt's test
 // harness, which renders on the CPU (SwiftShader): 10 ms a frame at 480×480
-// and 39 ms at 1024×1024, including GPU work. A real GPU is many times faster.
+// and 39 ms at 1024×1024, including GPU work. In Glimt on a Windows desktop
+// GPU: 0.9 ms at 1024×1024, estimated 4.8 ms at a 3840×2160 full screen.
 
 export const requires = ["three", "postprocessing"]
 

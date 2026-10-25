@@ -110,7 +110,16 @@ The preview reports the whole frame time, including the GPU, and estimates it at
 | GPGPU, 65k particles | moderate | Check `maxTextureSize` and the full screen estimate first |
 | `PMREMGenerator` + `RoomEnvironment` | high once | Build in `create()`, never per frame |
 
-Glimt's own tests run on a software GPU. There, the examples measure (whole frame, 1024×1024): `smoke-flow-gpgpu.js` 4 ms, `three-orb.js` 5 ms, `sdf-lotus-2d.js` 34 ms, `glow-orb-postprocessing.js` 39 ms. Real GPUs are many times faster. Use these numbers to compare techniques, not as absolute times.
+What the examples measure, whole frame including GPU work:
+
+| Example | Real GPU (Windows desktop), 1024×1024 | Its estimate at 3840×2160 full screen | Software GPU (Glimt's tests), 1024×1024 |
+|---|---|---|---|
+| `sdf-lotus-2d.js` | 0.7 ms | 3.9 ms | 34 ms |
+| `smoke-flow-gpgpu.js` | 0.7 ms | 3.6 ms | 4 ms |
+| `glow-orb-postprocessing.js` | 0.9 ms | 4.8 ms | 39 ms |
+| `three-orb.js` | | | 5 ms |
+
+The software GPU distorts relative costs: per-pixel shaders and post-processing look far more expensive there than on real hardware. Trust the preview on the user's own machine. A laptop's integrated GPU can be several times slower than this desktop's.
 
 ## macOS (WebKit)
 

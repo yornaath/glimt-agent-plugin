@@ -8,7 +8,8 @@
 // Cost: two 128×128 simulation passes (3 noise calls a particle) and 16,384
 // small additive sprites. Measured in Glimt's test harness, which renders on
 // the CPU (SwiftShader): 2.4 ms a frame at 480×480 and 4.2 ms at
-// 1024×1024, including GPU work. A real GPU is many times faster.
+// 1024×1024, including GPU work. In Glimt on a Windows desktop GPU: 0.7 ms at
+// 1024×1024, estimated 3.6 ms at a 3840×2160 full screen.
 //
 // 256×256 (65,536 particles) also works on most GPUs, but only go there when
 // renderer.capabilities.maxTextureSize and the preview's full screen estimate
@@ -141,12 +142,12 @@ const velocityShader = /* glsl */ `
     vec3 velocity = texture2D(textureVelocity, uv).xyz;
     vec3 target = texture2D(tTarget, uv).xyz;
 
-    // Where the smoke wants to go. Out: it rides the current, on a soft leash past radius 0.7.
+    // Where the smoke wants to go. Out: it rides the current, on a soft leash past radius 0.6.
     // In: it gathers onto the sphere while the current calms.
     float flow = mix(0.22, 0.04, uLevel);
     vec3 desired = curl3(position * 0.8, uTime * 0.07) * flow;
     desired += (target - position) * 4.0 * uLevel;
-    desired -= position * max(length(position) - 0.7, 0.0) * 3.0;
+    desired -= position * max(length(position) - 0.6, 0.0) * 3.0;
     // The velocity eases towards that, damped 0.96 a frame at 60 fps, so the smoke never jerks or overshoots.
     velocity = mix(desired, velocity, pow(0.96, uDt * 60.0));
     gl_FragColor = vec4(velocity, 1.0);
@@ -352,6 +353,7 @@ export default function create({ canvas, size, THREE, addons }) {
   })
   const points = new THREE.Points(geometry, material)
   points.frustumCulled = false // positions come from a texture, so the bounding sphere is meaningless
+  points.position.y = 0.12 // a little above the middle, so the lower fifth, where the app draws its labels, stays calm
 
   const scene = new THREE.Scene()
   scene.add(points)
