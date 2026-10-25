@@ -2,13 +2,13 @@
 
 A custom visualization is the source of one ES module. Glimt runs it in a Web Worker inside a sandboxed iframe and draws it where the built-in breathing orb would be.
 
-This document mirrors `packages/core/src/visualization/CustomVisualizationApi.ts` and `apps/app/src-tauri/sandbox/runner.html` in the glimt-app repo. When they disagree, the code wins.
+This document mirrors `packages/core/src/visualization/CustomVisualizationApi.ts`, `packages/core/src/visualization/sandboxLibraries.ts`, `apps/app/scripts/sandbox/libraries.mjs` and `apps/app/src-tauri/sandbox/runner.html` in the glimt-app repo. When they disagree, the code wins.
 
 ## Exports
 
 ```ts
-/** Optional. Libraries to inject into create(). Only "three" exists. */
-export const requires: Array<"three">
+/** Optional. Libraries to inject into create(). Their dependencies load automatically. */
+export const requires: Array<"three" | "three/addons" | "postprocessing">
 
 /** Required. Called once per mount; may return a Promise. */
 export default function create(ctx: VisualizationContext): Renderer | Promise<Renderer>
@@ -16,14 +16,34 @@ export default function create(ctx: VisualizationContext): Renderer | Promise<Re
 
 A module without a default-exported function, or whose `create` doesn't return an object with a `render` function, fails with a descriptive error. `resize` and `dispose` are optional in practice, but always include them.
 
+### Libraries
+
+| `requires` | Context key | Version | What it is |
+|---|---|---|---|
+| `"three"` | `THREE` | 0.186.1 | three.js, exactly `import * as THREE from "three"` |
+| `"three/addons"` | `addons` | 0.186.1 | Curated three.js example modules: GPGPU, composer and passes, lines, environments, samplers |
+| `"postprocessing"` | `postprocessing` | 6.39.5 | pmndrs postprocessing |
+
+- **Dependencies load first.** `"three/addons"` and `"postprocessing"` depend on `"three"`, so `THREE` is there whenever either is. All of them share one three.js instance.
+- **`THREE` is unguarded**, as before: a name three.js doesn't have reads as `undefined`.
+- **`addons` and `postprocessing` are guarded.** Reading a name they don't have throws `addons.X isn't available in Glimt's sandbox. <reason>`, with what to use instead, or the list of what is available.
+- **A name not in the table** fails with ``Unknown library "x" in `requires`. Available: three, three/addons, postprocessing``.
+- **Older Glimt versions** have only `"three"`. Call `get_visualization_capabilities` before requiring anything else. If the tool doesn't exist, the app is older than API version 2.
+
+`references/libraries.md` lists every export and every deliberately unavailable one.
+
 ## `create(ctx)`
 
 ```ts
 type VisualizationContext = {
   canvas: OffscreenCanvas
   size: VisualizationSize
-  /** The `three` module namespace (`import * as THREE from "three"`); present only when `requires` includes "three". */
+  /** The `three` module namespace (`import * as THREE from "three"`); present when `requires` includes "three" or a library that depends on it. */
   THREE?: typeof import("three")
+  /** The curated three.js addons; present when `requires` includes "three/addons". Guarded. */
+  addons?: object
+  /** pmndrs postprocessing; present when `requires` includes "postprocessing". Guarded. */
+  postprocessing?: typeof import("postprocessing")
 }
 
 type VisualizationSize = {
@@ -35,7 +55,7 @@ type VisualizationSize = {
 
 - **`canvas.width` and `canvas.height` are device pixels.** They are already set to `round(size.width * dpr)` × `round(size.height * dpr)`, capped at 4096 per side, so 2D drawing can use `canvas.width/height` directly.
 - **The canvas is an `OffscreenCanvas`.** It has `getContext("2d" | "webgl" | "webgl2" | "bitmaprenderer")`, `width` and `height`. It has no CSS size, `clientWidth` or DOM events. `canvas.style` is an empty stub object, so three.js's `setSize` doesn't crash; still pass `false` as the third argument.
-- **three.js:** `new THREE.WebGLRenderer({ canvas, alpha: true })`, then `renderer.setPixelRatio(size.dpr)` and `renderer.setSize(size.width, size.height, false)`. The three.js version is the one Glimt bundles; addons (OrbitControls, postprocessing, loaders) aren't included.
+- **three.js:** `new THREE.WebGLRenderer({ canvas, alpha: true })`, then `renderer.setPixelRatio(size.dpr)` and `renderer.setSize(size.width, size.height, false)`. three.js's example modules are only there through `"three/addons"`, and only the curated ones; nothing that needs the DOM, input, files or the network (OrbitControls, loaders).
 - **Async is fine.** `create` may be `async`, e.g. to build textures first. It must settle within 10 seconds, counting from when the module loaded, or it is killed.
 
 ## `render(sequences, state, canvas, session)`
@@ -134,11 +154,12 @@ The module runs in a dedicated worker with an opaque origin and this Content Sec
 | Available | Not available |
 |---|---|
 | `OffscreenCanvas` 2D, WebGL, WebGL2 | `window`, `document`, DOM, CSS, events, input |
-| `ctx.THREE` (when required) | `import` / `import()` of URLs or packages, `importScripts` |
+| `ctx.THREE`, `ctx.addons`, `ctx.postprocessing` (when required) | `import` / `import()` of URLs or packages, `importScripts` |
 | `Math`, typed arrays, `ImageData`, `createImageBitmap` from generated data | `fetch`, XHR, WebSocket, loading images or fonts from URLs |
 | `performance.now()`, `setTimeout`/`setInterval`, `requestAnimationFrame` | `localStorage`, IndexedDB, cookies |
 | System fonts for canvas text (`system-ui, sans-serif`) | Web fonts |
-| `crypto.getRandomValues` | Anything of the Glimt app or the user's machine |
+| `crypto.getRandomValues` | Nested workers (a library that starts one fails) |
+| | Anything of the Glimt app or the user's machine |
 
 Make textures procedurally: draw to another `OffscreenCanvas`, fill an `ImageData`, or use `THREE.DataTexture` / `THREE.CanvasTexture`.
 
