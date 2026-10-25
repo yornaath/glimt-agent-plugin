@@ -96,10 +96,24 @@ Renders a module off screen through one breath cycle and returns what it drew. N
 It returns MCP content blocks, not JSON:
 1. **A summary:**
    - what was previewed, the size, background and pattern
-   - frames rendered with the average and slowest `render` time in ms (CPU time)
+   - the timings and the GPU, in these lines:
+     ```
+     Rendered 480 frames. render() CPU time: 0.1 ms average, 6.2 ms slowest.
+     Whole frame including GPU work, at 480×480: 0.9 ms average, 14.0 ms slowest (the slowest is usually the first, which compiles shaders).
+     Estimated at the user's largest full screen canvas (3072×1920 px): about 21.0 ms a frame, if the GPU cost is per pixel. The budget is 16 ms; aim for well under it on a laptop.
+     GPU: WebGL2 yes, float render targets (EXT_color_buffer_float) yes, max texture size 16384.
+     ```
    - `No errors.`, or `The module FAILED (Error|Timeout|Unsupported): <message>` followed by the stack
    - the folder the PNGs were saved to
 2. **For each snapshot:** a label (`Frame 2: end of inhale (fully in)`) followed by the PNG image.
+
+Reading the timings:
+- **render() CPU time** is your JavaScript. With WebGL it's usually small, because the GPU does the work later.
+- **Whole frame** adds waiting for that GPU work, measured on the user's own GPU. This is the number to keep low: under 4 ms average at 1024×1024 is a good target. For a 2D module, the two are about the same.
+- **The full screen estimate** scales the GPU part to the biggest canvas the module gets (from `get_display_info`), assuming it costs per pixel, which is true for full-screen shaders and roughly true for post-processing. Over 16 ms means it will stutter full screen. Render the expensive part into a target capped near 1 MP, put post-processing at half resolution, or simplify. For a 2D module, it's about the CPU time, since only the GPU part is scaled.
+- **GPU** says what techniques can rely on. Without float render targets, GPGPU must use `THREE.HalfFloatType`.
+
+Older versions of Glimt only report the first line, as `Rendered N frames: X ms average, Y ms slowest.`, measured on the CPU.
 
 Snapshots are taken at each phase's midpoint, plus the end of the inhale and of the exhale. With all four phases that's 6 frames; phases of 0 s are skipped. When the module fails there are no frames.
 
@@ -109,6 +123,34 @@ How it works:
 - **The session** has one section labelled with the pattern (e.g. `4-7-8`) and no playlist.
 - **Saved files.** The PNGs are also saved to `<system temp>/glimt-visualization-preview/`, replaced on every preview, so the user can open them.
 - **One preview at a time.** The first one takes a few seconds longer while Glimt opens its hidden preview window.
+
+## `get_visualization_capabilities`
+
+Arguments: none. Read-only. Returns what modules can use in this version of Glimt. **Call it before writing a module.** Older versions of Glimt don't have this tool. There, only `requires = ["three"]` works and previews time the CPU only.
+
+```json
+{
+  "api_version": 2,
+  "libraries": [
+    { "name": "three", "context_key": "THREE", "version": "0.186.1", "depends_on": [], "exports": [], "unavailable": [] },
+    {
+      "name": "three/addons", "context_key": "addons", "version": "0.186.1", "depends_on": ["three"],
+      "exports": ["BokehPass", "BufferGeometryUtils", "ClearPass", "CopyShader", "…"],
+      "unavailable": [{ "name": "AfterimagePass", "reason": "It reads window.innerWidth, which a worker doesn't have. …" }, "…"]
+    },
+    {
+      "name": "postprocessing", "context_key": "postprocessing", "version": "6.39.5", "depends_on": ["three"],
+      "exports": ["AdaptiveLuminanceMaterial", "AdaptiveLuminancePass", "BlendFunction", "BloomEffect", "…"],
+      "unavailable": [{ "name": "SMAAEffect", "reason": "It decodes its lookup textures with Image, …" }, "…"]
+    }
+  ]
+}
+```
+
+- `name` goes in `requires`; the library arrives as `ctx[context_key]`.
+- `exports` lists every name of a guarded library; it's empty for `three`, whose API is three.js's own.
+- `unavailable` names exports left out on purpose. Reading one throws its `reason`.
+- `api_version` goes up when the module API changes. `references/libraries.md` has the changelog.
 
 ## `delete_custom_visualization`
 
