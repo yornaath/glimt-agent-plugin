@@ -112,6 +112,13 @@ The preview reports the whole frame time, including the GPU, and estimates it at
 
 Glimt's own tests run on a software GPU. There, the examples measure (whole frame, 1024×1024): `smoke-flow-gpgpu.js` 4 ms, `three-orb.js` 5 ms, `sdf-lotus-2d.js` 34 ms, `glow-orb-postprocessing.js` 39 ms. Real GPUs are many times faster. Use these numbers to compare techniques, not as absolute times.
 
+## macOS (WebKit)
+
+On macOS, Glimt runs in WKWebView, which is WebKit; on Windows it's WebView2 (Chromium). Glimt's test suite runs every example in Chromium. Its WebKit run needs a Mac, because Playwright's WebKit builds for Windows and Linux have no `OffscreenCanvas`. So check a WebKit difference in the real app, with `last_error` after a session.
+- Custom visualizations need macOS 14 or later: WebGL2 on an `OffscreenCanvas` in a worker arrived with Safari 17. Older systems report `unsupported`.
+- `EXT_color_buffer_float` can be missing; the preview's GPU line says. GPGPU should fall back to `THREE.HalfFloatType`, as `examples/smoke-flow-gpgpu.js` does.
+- WebKit coarsens `performance.now()`, so preview timings there are less precise.
+
 ## Version policy and changelog
 
 - three.js and postprocessing are upgraded together, and only with Glimt's sandbox test suite green. postprocessing 6.39.5 supports three.js below 0.187, so a three.js upgrade waits for a matching postprocessing release.
