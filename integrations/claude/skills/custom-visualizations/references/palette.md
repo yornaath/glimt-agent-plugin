@@ -24,7 +24,7 @@ Together they make a vertical gradient from rose through orchid and violet to in
 
 - **Proportions.** `body`, `shade` and `indigo` cover most of the area. `flush` and `orchid` stay a thin band at the top or on highlights, never a large fill. Keep the `outline` thin and the `glow` faint.
 - **Beyond an orb.** Map the gradient onto the shape's own "up", or onto intensity: brightest or nearest parts get `flush` and `orchid`, the middle gets `body`, and far or low parts get `indigo` and `deep`. Edges get `rim` or `outline`. Halos, bloom and particle glow get `glow`. For a lotus, that means `body` petals with `orchid`/`flush` tips, an `outline` edge and a `glow` halo. For particles, use `body` and `shade` for the mass, and a few `orchid` ones where they gather.
-- **Follow the breath.** Cross-fade from the breathing column to the hold column during `hold-in` and `hold-out`, and back when air moves. Use the same glide as for motion (SKILL.md, "Ease, and never snap") with a time constant of about 0.6 s. It's optional, but it's what the orb does.
+- **Follow the breath.** Cross-fade from the breathing column to the hold column during `hold-in` and `hold-out`, and back when air moves. Use the glide from SKILL.md, "Ease, and never snap" (only for colour; the radius follows the sine ease directly) with a time constant of about 0.6 s. It's optional, but it's what the orb does.
 - **Aim the final pixel at these colours.** They are on-screen colours, not lighting inputs. If you shade with them, e.g. multiply by a diffuse term, the result comes out darker and muddier than the orb. Paint the gradient with them directly, and keep any added lighting gentle.
 
 ## In code

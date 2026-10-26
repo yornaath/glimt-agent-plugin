@@ -49,7 +49,8 @@ Read these before writing a module:
 
 A preview has six frames for a pattern with all four phases: inhale 50%, end of inhale (fully in), hold after inhale 50%, exhale 50%, end of exhale (fully out), and hold after exhale 50%. Phases of 0 seconds are skipped. Check that:
 
-- **It follows the breath.** Inhale 50% sits clearly between fully out and fully in, and fully in and fully out look clearly different (size, brightness or openness). The holds look like rest. The user should be able to breathe along without reading anything.
+- **It follows the breath.** Inhale 50% and exhale 50% sit halfway in size between fully out and fully in (the sine ease is symmetric), and fully in and fully out clearly differ in size. Each hold frame has exactly the radius of the end frame before it. The user should be able to breathe along without reading anything.
+- **It peaks at the end, not before.** The snapshots don't include frames just before a phase ends, so preview a debug copy whose `render` passes `{ ...state, progress: state.progress * 0.9 }` instead of `state`. Its "end of inhale" frame then shows 90% of the inhale. Compare it with the real end of inhale: it must look clearly short of full, with no cue (size, glow, brightness, openness) already at its maximum. Do the same for the exhale and its minimum. Never install the debug copy.
 - **It's composed well.** Nothing is clipped at the edges, even when fully in. The main shape is centred. The lower fifth is calm, because the app draws the phase label and buttons there.
 - **The background is transparent.** Frames come on a dark background by default. Preview with `"background": "light"` too: a dark halo or an opaque rectangle means something isn't clearing to transparent.
 - **It works small.** Preview at `"width": 220, "height": 220` (the micro reminder). It should still read, with no tiny text or hairlines.
@@ -104,9 +105,28 @@ export default function create({ canvas, size, THREE, addons, postprocessing }) 
 
 ## Designing a good one
 
-- **Follow the breath.** It is a breathing guide first and art second. Inhale grows, rises or brightens; the holds rest, still or barely moving; exhale releases. Use the same mapping for every phase type, because users breathe many patterns.
-- **Ease, and never snap.** Ease within a phase (`0.5 - Math.cos(Math.PI * t) / 2`). Glide across phase boundaries with a frame-rate-independent approach: `v += (target - v) * (1 - Math.exp(-rate * dt))`, where `dt` comes from `state.time`, clamped to `[0, 0.1]`: a negative `dt` makes the factor huge, and the value turns into `NaN` and stays broken for the rest of the mount. All the examples do this.
-- **Calm.** No flashing, strobing or fast flicker: some users are photosensitive, and the point is to relax. Slow ambient motion (drift, shimmer) is fine at well under 1 Hz.
+> **IMPORTANT: the radius follows a sine ease.** Each inhale/exhale phase uses sine ease-in-out on its progress, `eased = (1 - cos(π·t)) / 2` (slow start, fastest at mid-breath, slow arrival), to grow the radius from `exhaled_scale` to 1 on inhale and shrink it back on exhale; the radius stays still during holds.
+>
+> ```js
+> const eased = 0.5 - Math.cos(Math.PI * state.progress) / 2
+> const level = phase.type === "inhale" ? eased     // 0 → 1
+>   : phase.type === "exhale" ? 1 - eased          // 1 → 0
+>   : phase.type === "hold-in" ? 1 : 0             // holds: no change
+> const radius = fullRadius * (exhaled_scale + (1 - exhaled_scale) * level)
+> ```
+>
+> `exhaled_scale` is the radius when fully out, as a fraction of the radius when fully in (e.g. 0.45). For shapes that aren't circles, the radius is the main shape's overall size. Drive it straight from `level`: no glide, spring or extra easing on top, and no breathing, wobble or drift in the radius during holds.
+
+> **IMPORTANT: max lands exactly at the end of the inhale, min exactly at the end of the exhale.** The visualization must flow visibly from fully out to fully in across the whole inhale, and back across the whole exhale. It must never look full before the inhale ends, or empty before the exhale ends. This applies to every value that follows the breath (size, brightness, glow, openness, colour, particles gathering), not only the radius:
+>
+> - **Nothing saturates early.** Map each value from `level` so that it is still changing right up to `level` 1 (or 0). Ranges like `smoothstep(0.0, 0.7, level)` or `Math.min(1, level * 1.5)` hit their limit too early, and so do effects that max out on their own: bloom that clips to white, petals that reach their stop, particles that have all gathered.
+> - **Nothing lags.** A glide, spring or lerp on a value that follows the breath makes it arrive late, so the peak shows up in the hold. Only colour cross-fades glide (below).
+> - **The hold look starts at the hold.** The cross-fade to the hold colours begins when `hold-in`/`hold-out` starts, not in the last part of the inhale/exhale.
+> - **Give the motion enough range.** The sine ease slows to a stop at both ends: at 90% of the phase, 97.6% of the change has already happened. If the change between fully out and fully in is small, the last stretch can't be seen and the shape looks finished early. Keep `exhaled_scale` around 0.6 or lower, and let secondary cues (brightness, glow) move with the same `level` so the shape still visibly changes near the end.
+
+- **Follow the breath.** It is a breathing guide first and art second. Inhale grows the main shape, as above, and can also rise or brighten; exhale shrinks it back; the holds rest with the radius still. Use the same mapping for every phase type, because users breathe many patterns.
+- **Ease, and never snap.** The sine ease above is continuous across phase boundaries, so the radius needs nothing more. Other values that would jump at a boundary, like the colour cross-fade between breathing and holds, glide with a frame-rate-independent approach: `v += (target - v) * (1 - Math.exp(-rate * dt))`, where `dt` comes from `state.time`, clamped to `[0, 0.1]`: a negative `dt` makes the factor huge, and the value turns into `NaN` and stays broken for the rest of the mount.
+- **Calm.** No flashing, strobing or fast flicker: some users are photosensitive, and the point is to relax. Slow ambient motion (drift, shimmer) is fine at well under 1 Hz, as long as it leaves the radius alone.
 - **Every size.** The same module runs in a 480 px prompt window, full screen on large monitors, a ~220 px round micro reminder and a small settings preview. Scale everything from `Math.min(canvas.width, canvas.height)`. Skip fine detail and text below about 260 CSS px. Multiply line widths and font sizes by `size.dpr`. If `get_display_info` reports an `upscale` above 1 (scaling over 200 %), the canvas is stretched on screen, so make thin lines and small text a little bolder.
 - **The Glimt look**, unless the user wants something else: a violet body with a dusty-rose flush from above and deep indigo below, a thin periwinkle outline and a gentle violet halo. Breathing is a brighter violet; the holds turn a deeper purple. Take the colours, their proportions and the code from `references/palette.md`.
 - **Light on the GPU.** It may run for long sessions on laptops. Prefer `powerPreference: "low-power"`, modest geometry and the given `dpr`, which is already capped at 2. Cost per pixel matters most: full screen at `dpr` 2 is 8+ MP. For an expensive fragment shader, render into a `WebGLRenderTarget` capped near 1 MP and draw it scaled up onto the canvas. Don't shrink the canvas itself with `setPixelRatio`; keep `size.dpr`. The cookbook's Budget section and `references/libraries.md` give rough costs per technique.
