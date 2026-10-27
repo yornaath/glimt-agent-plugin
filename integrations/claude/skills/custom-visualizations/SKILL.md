@@ -33,16 +33,20 @@ Read these before writing a module:
 5. **Write the module.** Save it to a local file the user can keep, e.g. `glimt-visualizations/<name>.js`. If Node is available, run `node --check <file>` to catch syntax errors.
 6. **Preview the draft.** Call `preview_custom_visualization` `{ "source": "<module source>" }`. Look at every frame and read the summary. Work through the checklist below.
 7. **Fix and preview again** until the checklist passes. This loop is cheap (about a second per preview) and invisible to the user, so use it freely.
-8. **Install it** with `create_custom_visualization` `{ "visualization": { "name", "description", "source" } }` and note the returned `id`.
-9. **Select it.** Call `get_settings`, set `visuals.visualization` to `{ "CustomVisualization": { "id": <id> } }`, and pass the whole settings object back to `update_settings`. It replaces all settings, so never send a partial object.
-10. **Let the user see it.** Offer a real session with `show_main_breath_reminder` `{ "reminder_mode": { "Offer": { "text": "Want to try your new visualization?" } } }`. Use `"Immediate"` only if they asked to see it now. You can also point them to the live preview on Glimt's Visuals settings page.
-11. **Confirm it ran.** After they have seen it, call `get_custom_visualization` `{ "id": <id> }` and check that `last_error` is `null`. The real app can differ from the preview, e.g. a WebKit difference on macOS. Then ask how it feels.
+8. **Decide on the counter.** The built-in orbs show the seconds left in the phase as a small violet number in their centre. Glimt can draw the same counter on top of your visualization when `show_counter` is `true`. Judge it from the design; previews don't draw the counter, so don't try to test it:
+   - `true` for a calm, simple shape with a quiet centre, especially one in the Glimt palette, where a small violet number stays readable and looks like it belongs, like it does on the orb.
+   - `false` when the centre is busy, bright, detailed or textured, when the design has no centre (full-screen patterns, scenes, landscapes), when it already puts something in the middle (text, a symbol, a flower's heart), or when its colours would swallow or clash with a violet number.
+   - When you're unsure, choose `false`.
+9. **Install it** with `create_custom_visualization` `{ "visualization": { "name", "description", "source", "show_counter" } }` and note the returned `id`.
+10. **Select it.** Call `get_settings`, set `visuals.visualization` to `{ "CustomVisualization": { "id": <id> } }`, and pass the whole settings object back to `update_settings`. It replaces all settings, so never send a partial object.
+11. **Let the user see it.** Offer a real session with `show_main_breath_reminder` `{ "reminder_mode": { "Offer": { "text": "Want to try your new visualization?" } } }`. Use `"Immediate"` only if they asked to see it now. You can also point them to the live preview on Glimt's Visuals settings page.
+12. **Confirm it ran.** After they have seen it, call `get_custom_visualization` `{ "id": <id> }` and check that `last_error` is `null`. The real app can differ from the preview, e.g. a WebKit difference on macOS. Then ask how it feels. Tell them they can turn the counter on or off with "Show counter" on Glimt's Visuals settings page.
 
 ## Editing a visualization
 
 1. Call `get_custom_visualization` `{ "id": <id> }` for the current source. Save it locally first so the user can go back.
 2. Make the change and **preview it as a draft** with `{ "source": "<edited source>" }`. The user's installed version stays untouched while you iterate.
-3. When it passes the checklist, save it with `update_custom_visualization` `{ "id": <id>, "patch": { "source": "…" } }`. Open Glimt windows reload it immediately, `revision` goes up and `last_error` is cleared.
+3. When it passes the checklist, save it with `update_custom_visualization` `{ "id": <id>, "patch": { "source": "…" } }`. Open Glimt windows reload it immediately, `revision` goes up and `last_error` is cleared. If the change alters the centre or the overall look, decide on the counter again (Creating, step 8) and add `"show_counter"` to the patch if the answer changed. The user may have set it themselves in the settings, so leave it alone when the look stays the same.
 4. Preview it once more by `{ "id": <id> }` to confirm the saved revision, then let the user look.
 
 ## What to check in a preview
@@ -99,7 +103,7 @@ export default function create({ canvas, size, THREE, addons, postprocessing }) 
 - **No input.** The visualization never receives clicks or keys.
 - **Size only from `size` and `canvas`.** Never hard-code a resolution, pixel ratio or aspect ratio. Recompute everything size-dependent in `resize(size)` (projection, gradients, line widths, cached layouts and render targets). It runs whenever the window changes size or the user changes display scaling or moves to another monitor, and `size.dpr` can go up or down.
 - **Keep the background transparent.** Clear to transparent (`clearRect`, or `setClearColor(0x000000, 0)`). The app's own background and blur show through.
-- **Don't draw the app's UI.** Glimt already shows the phase instruction ("Inhale"), the round counter and the Snooze/Skip buttons over the bottom of the area. Section or playlist names are fine.
+- **Don't draw the app's UI.** Glimt already shows the phase instruction ("Inhale"), the round counter and the Snooze/Skip buttons over the bottom of the area. Section or playlist names are fine. Never draw your own phase countdown either: with `show_counter` on, Glimt draws it in the centre.
 - **Stay responsive.** If the module goes quiet for more than 10 s while loading, or 4 s after it starts, it is killed and the user sees the built-in orb.
 - **Limits.** The source can be at most 512 KB, the name at most 100 characters and the description at most 2000. A module that posts messages in a tight loop is killed.
 

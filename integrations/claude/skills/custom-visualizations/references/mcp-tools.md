@@ -17,6 +17,7 @@ type CustomVisualization = {
   name: string
   description: string
   source: string                          // the module source
+  show_counter: boolean                   // Glimt draws the phase countdown in the centre, on top of the module
   revision: number                        // 1 on create, +1 on every update
   last_error: CustomVisualizationError | null
   created_at: string
@@ -53,12 +54,13 @@ Returns `CustomVisualization`, including `source` and `last_error`. Read-only. T
   "visualization": {
     "name": "Ocean waves",
     "description": "Waves roll in as you inhale and wash out as you exhale.",
-    "source": "export default function create({ canvas, size }) { … }"
+    "source": "export default function create({ canvas, size }) { … }",
+    "show_counter": false
   }
 }
 ```
 
-All three fields are required; use `""` for no description. Limits: `name` 1–100 characters, `description` up to 2000 characters, `source` non-empty and at most 512 KB. Returns the created `CustomVisualization`. Creating doesn't select it; see `update_settings` below.
+All four fields are required; use `""` for no description. Choose `show_counter` as SKILL.md describes (Creating, step 8). Older Glimt versions don't have `show_counter`: if the tool's schema doesn't list it, leave it out. Limits: `name` 1–100 characters, `description` up to 2000 characters, `source` non-empty and at most 512 KB. Returns the created `CustomVisualization`. Creating doesn't select it; see `update_settings` below.
 
 ## `update_custom_visualization`
 
@@ -66,7 +68,7 @@ All three fields are required; use `""` for no description. Limits: `name` 1–1
 { "id": 3, "patch": { "source": "export default function create(ctx) { … }" } }
 ```
 
-`patch` takes any of `name`, `description` and `source`; fields you leave out keep their value. Every update increments `revision`, clears `last_error`, and makes open Glimt windows reload the visualization right away. Returns the updated `CustomVisualization`.
+`patch` takes any of `name`, `description`, `source` and `show_counter`; fields you leave out keep their value. Every update increments `revision`, clears `last_error`, and makes open Glimt windows reload the visualization right away. Returns the updated `CustomVisualization`.
 
 ## `preview_custom_visualization`
 
