@@ -19,6 +19,7 @@ type CustomVisualization = {
   source: string                          // the module source
   show_counter: boolean                   // Glimt draws the phase countdown in the centre, on top of the module
   counter_offset: CounterOffset           // where that countdown sits; { x: 0, y: 0 } is the centre
+  counter_color: string | null            // "#rgb" or "#rrggbb" for the countdown; null is the default violet/rose
   revision: number                        // 1 on create, +1 on every update
   last_error: CustomVisualizationError | null
   created_at: string
@@ -67,7 +68,9 @@ Returns `CustomVisualization`, including `source` and `last_error`. Read-only. T
 }
 ```
 
-`name`, `description`, `source` and `show_counter` are required; use `""` for no description. `counter_offset` is optional and defaults to the centre. Choose `show_counter` and `counter_offset` as SKILL.md describes (Creating, step 8). Older Glimt versions don't have `show_counter` or `counter_offset`: if the tool's schema doesn't list one, leave it out. An offset outside ±0.5 fails with `Invalid entity: counter_offset x and y must be numbers between -0.5 and 0.5`. Limits: `name` 1–100 characters, `description` up to 2000 characters, `source` non-empty and at most 512 KB. Returns the created `CustomVisualization`. Creating doesn't select it; see `update_settings` below.
+`name`, `description`, `source` and `show_counter` are required; use `""` for no description. `counter_offset` is optional and defaults to the centre. `counter_color` is optional too: leave it out (or pass `""`) for the default colours, and set it only as SKILL.md describes. Choose `show_counter`, `counter_offset` and `counter_color` as SKILL.md describes (Creating, step 8). Older Glimt versions don't have some of these: if the tool's schema doesn't list one, leave it out. Bad values fail with:
+- `Invalid entity: counter_offset x and y must be numbers between -0.5 and 0.5`
+- `Invalid entity: counter_color must be a hex colour like #a1b2c3 or #abc, or "" for the default, not "red"` Limits: `name` 1–100 characters, `description` up to 2000 characters, `source` non-empty and at most 512 KB. Returns the created `CustomVisualization`. Creating doesn't select it; see `update_settings` below.
 
 ## `update_custom_visualization`
 
@@ -75,7 +78,7 @@ Returns `CustomVisualization`, including `source` and `last_error`. Read-only. T
 { "id": 3, "patch": { "source": "export default function create(ctx) { … }" } }
 ```
 
-`patch` takes any of `name`, `description`, `source`, `show_counter` and `counter_offset`; fields you leave out keep their value. Every update increments `revision`, clears `last_error`, and makes open Glimt windows reload the visualization right away. Returns the updated `CustomVisualization`.
+`patch` takes any of `name`, `description`, `source`, `show_counter`, `counter_offset` and `counter_color`; fields you leave out keep their value. `"counter_color": ""` goes back to the default colours. Every update increments `revision`, clears `last_error`, and makes open Glimt windows reload the visualization right away. Returns the updated `CustomVisualization`.
 
 ## `preview_custom_visualization`
 

@@ -46,6 +46,10 @@ const GLIMT_PALETTE = {
 - **three.js:** `new THREE.Color(GLIMT_PALETTE.breathing.body)` stores linear RGB, so pass it as a uniform and use it in shader maths directly. To blend between stops or between the two palettes in a shader, use `oklabMix` from the cookbook.
 - **2D canvas:** the hex strings are sRGB. Canvas gradients between neighbouring stops (e.g. `body` → `indigo`) are fine as they are. To cross-fade the two palettes in JavaScript, convert to linear RGB, mix there and convert back, not on the raw sRGB values.
 
+## The counter
+
+Glimt draws the phase countdown (`show_counter`) in violet `#897aff` while breathing and in rose `#e687d8` at 60% opacity during holds. It reads well on this palette, so a visualization in these colours never needs a `counter_color`. Set one only for a palette of its own that this pair doesn't suit (SKILL.md, Creating, step 8).
+
 ## Where these come from
 
 The colours were sampled from renders of the default orb at its default settings. The orb shader takes different inputs (`Orb3DPalette` in glimt-app's `packages/ui/src/components/animations/Orb3DVisualization.ts/types.ts`) and mixes and multiplies them: its orange top light shows up as the dusty-rose `flush`, and its gold shadow tint only darkens the `shade` side. Don't use those inputs as flat colours. When the orb's palette changes, sample a new render and update this file.
