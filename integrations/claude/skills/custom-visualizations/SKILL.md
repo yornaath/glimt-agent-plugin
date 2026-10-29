@@ -48,7 +48,7 @@ Read these before writing a module:
 
    Then pick one hex colour (`#rgb` or `#rrggbb`) from the visualization's own palette: a light, calm accent that reads clearly against the subject's centre on both the dark and the light background. During holds Glimt shows it at 60% opacity. When you're unsure, leave it out; never set it to restate the default.
 9. **Install it** with `create_custom_visualization` `{ "visualization": { "name", "description", "source", "show_counter", "counter_offset", "counter_color" } }` (`counter_color` only when step 8 calls for it) and note the returned `id`.
-10. **Select it.** Call `get_settings`, set `visuals.visualization` to `{ "CustomVisualization": { "id": <id> } }`, and pass the whole settings object back to `update_settings`. It replaces all settings, so never send a partial object.
+10. **Select it.** Call `get_settings`, then `update_settings` with `{ "settings": { "visuals": { "fullscreen": <as it was>, "visualization": { "CustomVisualization": { "id": <id> } } } } }`. On older Glimt versions, whose `update_settings` schema requires every section, send the whole settings object back with only `visuals.visualization` changed (see `references/mcp-tools.md`).
 11. **Let the user see it.** Offer a real session with `show_main_breath_reminder` `{ "reminder_mode": { "Offer": { "text": "Want to try your new visualization?" } } }`. Use `"Immediate"` only if they asked to see it now. You can also point them to the live preview on Glimt's Visuals settings page.
 12. **Confirm it ran.** After they have seen it, call `get_custom_visualization` `{ "id": <id> }` and check that `last_error` is `null`. The real app can differ from the preview, e.g. a WebKit difference on macOS. Then ask how it feels. Tell them they can turn the counter on or off with "Show counter" on Glimt's Visuals settings page. If they say the counter sits off the shape, fix `counter_offset` with `update_custom_visualization` and check it in a preview by `id`.
 
@@ -177,5 +177,5 @@ The first two hooks turn silent failures into `last_error` entries; see `referen
 ## Managing visualizations
 
 - `list_custom_visualizations` lists them all without their source.
-- `delete_custom_visualization` refuses the one selected in settings. Switch first: `get_settings`, set `visuals.visualization` to `{ "Orb3DVisualization": {} }`, call `update_settings`, then delete.
+- `delete_custom_visualization` refuses the one selected in settings. Switch first: set `visuals.visualization` to `{ "Orb3DVisualization": {} }` with `update_settings` as in Creating, step 10, then delete.
 - To go back to the built-in look, set `{ "Orb3DVisualization": {} }` (3D orb) or `{ "FlatOrbVisualization": { "orb_animation_mode": "Uneven", "orb_unevenness": 20 } }` (flat orb).

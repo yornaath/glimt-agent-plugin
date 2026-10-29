@@ -179,12 +179,11 @@ Fails with `… is in use` while the visualization is selected in the settings. 
 
 ### `get_settings` / `update_settings`
 
-`update_settings` replaces the whole settings object, so always `get_settings` first, change only `visuals.visualization`, and send everything back:
+`update_settings` changes only the sections you send, and replaces each one you send whole. Call `get_settings` first, so you can keep `visuals.fullscreen` as it is, and send just `visuals`:
 
 ```json
 {
   "settings": {
-    "…": "every other field exactly as get_settings returned it",
     "visuals": {
       "fullscreen": true,
       "visualization": { "CustomVisualization": { "id": 3 } }
@@ -192,6 +191,8 @@ Fails with `… is in use` while the visualization is selected in the settings. 
   }
 }
 ```
+
+Older Glimt versions replace the whole settings object instead. If the tool's schema marks every section as required, send everything back exactly as `get_settings` returned it, with only `visuals.visualization` changed.
 
 The `visualization` variants are:
 
